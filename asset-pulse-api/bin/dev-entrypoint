@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+# Dev-only entrypoint. Unlike the production bin/docker-entrypoint, this one
+# also keeps installed gems in sync with Gemfile/Gemfile.lock on every boot —
+# handy since the source is bind-mounted and gems don't get reinstalled just
+# by editing the Gemfile.
+if ! bundle check >/dev/null 2>&1; then
+  echo "Gemfile changed — running bundle install..."
+  bundle install
+fi
+
+# Create the database if it doesn't exist yet and apply any pending migrations.
+if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+  ./bin/rails db:prepare
+fi
+
+exec "${@}"
