@@ -1,0 +1,32 @@
+# Development image: keeps dev/test gems, skips asset precompile, and is
+# meant to be used together with a source-code bind mount (see the root
+# docker-compose.yml) so changes on the host are picked up without rebuilding.
+ARG RUBY_VERSION=3.1.2
+FROM docker.io/library/ruby:$RUBY_VERSION-slim
+
+WORKDIR /rails
+
+# System + gem native-extension build dependencies.
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential curl git libjemalloc2 libvips libpq-dev libyaml-dev pkg-config postgresql-client && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Ruby 3.1's slim image ships error_highlight 0.3.0 as a default gem, which
+# gets auto-activated at boot and clashes with the newer version the
+# Gemfile.lock pins (see https://bugs.ruby-lang.org/issues/18564).
+ENV RUBYOPT="--disable-error_highlight"
+ENV BUNDLE_PATH="/usr/local/bundle"
+
+COPY Gemfile Gemfile.lock ./
+RUN bundle install
+
+COPY . .
+
+RUN chmod +x bin/docker-entrypoint
+
+EXPOSE 3000
+
+ENTRYPOINT ["/rails/bin/docker-entrypoint"]
+
+CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
