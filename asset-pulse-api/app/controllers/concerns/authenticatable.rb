@@ -9,12 +9,12 @@ module Authenticatable
 
   def authenticate_user!
     token = request.headers['Authorization']&.split(' ')&.last
-    raise ExceptionHandler::MissingToken, 'Token ausente' if token.nil?
+    raise ExceptionHandler::MissingToken, 'Missing token' if token.nil?
 
     @decoded = JsonWebToken.decode(token)
     @current_user = User.find(@decoded[:user_id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Usuário não encontrado' }, status: :unauthorized
+    render json: { error: 'User not found' }, status: :unauthorized
   end
 
   def current_user

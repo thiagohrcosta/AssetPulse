@@ -1,0 +1,468 @@
+openapi: 3.0.1
+info:
+  title: AssetPulse API
+  description: >
+    Hand-written OpenAPI description of the `/api` endpoints in
+    `app/controllers/api/**`. Not generated from specs (this app isn't using
+    rswag-specs/RSpec) — keep this file in sync by hand when a controller's
+    request/response shape changes.
+
+    Import this file directly into Insomnia/Postman (Import > From File/URL),
+    or browse it at `/api-docs` once the server is running.
+  version: "1.0"
+servers:
+  - url: http://localhost:3000
+    description: Local (docker compose)
+
+tags:
+  - name: Auth
+  - name: Companies
+  - name: Plans
+  - name: Subscriptions
+    description: >
+      One subscription per company. `trial` starts a card-less 7-day trial;
+      `checkout_session` hands back a Stripe Checkout URL for the Basic/Premium
+      plans; `billing_portal` lets an already-paying company manage/cancel.
+      Access is gated on Subscription#access_granted? (see app/models/subscription.rb).
+  - name: Stripe Webhooks
+    description: Called by Stripe itself, not by API clients — included for completeness.
+  - name: Health
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Liveness check
+      security: []
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Create a user and return a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, password_confirmation, full_name, document_number, address_zip_code, address_street, address_number, address_city, address_state]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password, example: password123 }
+                password_confirmation: { type: string, format: password, example: password123 }
+                full_name: { type: string }
+                document_number: { type: string, description: CPF/CNPJ, example: "12345678900" }
+                address_zip_code: { type: integer, example: 12345678 }
+                address_street: { type: string }
+                address_number: { type: integer }
+                address_city: { type: string }
+                address_complement: { type: string, nullable: true }
+                address_state: { type: string, example: SP }
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Exchange email/password for a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  user: { $ref: '#/components/schemas/User' }
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/v1/companies:
+    get:
+      tags: [Companies]
+      summary: List the current user's companies
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Company' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Companies]
+      summary: Create a company owned by the current user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+          application/json:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/companies/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Companies]
+      summary: Show a company
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Companies]
+      summary: Update a company
+      requestBody:
+        content:
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+          application/json:
+            schema: { $ref: '#/components/schemas/CompanyInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Company' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Companies]
+      summary: Delete a company
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/plans:
+    get:
+      tags: [Plans]
+      summary: List active subscription plans (Basic / Premium with AI)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Plan' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/companies/{company_id}/subscription:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Subscriptions]
+      summary: Current subscription status for a company
+      description: Returns `{"status":"none","access_granted":false}` if the company has never started a trial/subscription.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/subscription/trial:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Subscriptions]
+      summary: Start the card-less 7-day trial
+      description: One trial per company — fails if the company already has a subscription (trial, active, or otherwise).
+      responses:
+        '201':
+          description: Trial started
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '422':
+          description: Company already has a subscription
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/companies/{company_id}/subscription/checkout_session:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Subscriptions]
+      summary: Create a Stripe Checkout session for a paid plan
+      description: >
+        Creates (or reuses) the company's Stripe Customer, then a Checkout
+        Session in subscription mode for the given plan. Redirect the browser
+        to the returned `checkout_url`; the local Subscription row is written
+        by the `checkout.session.completed` webhook once payment succeeds,
+        not by this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan_slug]
+              properties:
+                plan_slug: { type: string, enum: [basic, premium], example: basic }
+                success_url: { type: string, format: uri, description: "Defaults to STRIPE_CHECKOUT_SUCCESS_URL." }
+                cancel_url: { type: string, format: uri, description: "Defaults to STRIPE_CHECKOUT_CANCEL_URL." }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkout_url: { type: string, format: uri }
+        '422':
+          description: Unknown plan_slug
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/companies/{company_id}/subscription/billing_portal:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Subscriptions]
+      summary: Create a Stripe billing portal session
+      description: Only works once the company has a Stripe customer (i.e. after a checkout_session has run at least once).
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                return_url: { type: string, format: uri, description: "Defaults to STRIPE_CHECKOUT_CANCEL_URL." }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portal_url: { type: string, format: uri }
+        '422':
+          description: Company has no billing account yet
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/stripe/webhooks:
+    post:
+      tags: [Stripe Webhooks]
+      summary: Stripe event delivery endpoint
+      description: >
+        Not for manual/API-client use — Stripe calls this with a signed
+        payload (see app/controllers/api/v1/stripe/webhooks_controller.rb).
+        Authenticity comes entirely from the `Stripe-Signature` header, not a
+        bearer token.
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, description: "Raw Stripe::Event payload" }
+      responses:
+        '200': { description: Processed }
+        '400':
+          description: Missing/invalid signature or unparsable payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { description: "Handler raised while processing an otherwise-valid event" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Send the token from register/login as: `Authorization: Bearer <token>`'
+
+  responses:
+    Unauthorized:
+      description: Missing/invalid/expired token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found (or not owned by the current user)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    Errors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        full_name: { type: string }
+        document_number: { type: string }
+        address_zip_code: { type: integer }
+        address_street: { type: string }
+        address_number: { type: integer }
+        address_city: { type: string }
+        address_complement: { type: string, nullable: true }
+        address_state: { type: string }
+        access: { type: string, enum: [user, admin] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CompanyInput:
+      type: object
+      required: [name, registration_number, address_zip_code, address_street, address_number, address_city, address_state]
+      properties:
+        name: { type: string }
+        registration_number: { type: string, description: CNPJ, example: "12345678000199" }
+        address_zip_code: { type: integer }
+        address_street: { type: string }
+        address_number: { type: integer }
+        address_city: { type: string }
+        address_complement: { type: string, nullable: true }
+        address_state: { type: string, example: SP }
+        logo: { type: string, format: binary, description: "PNG/JPEG/WEBP, max 5MB" }
+
+    Company:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        registration_number: { type: string }
+        address_zip_code: { type: integer }
+        address_street: { type: string }
+        address_number: { type: integer }
+        address_city: { type: string }
+        address_complement: { type: string, nullable: true }
+        address_state: { type: string }
+        logo_url: { type: string, format: uri, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Plan:
+      type: object
+      properties:
+        id: { type: integer }
+        slug: { type: string, enum: [basic, premium] }
+        name: { type: string, example: "Premium with AI" }
+        amount_cents: { type: integer, example: 8999 }
+        amount: { type: number, format: float, example: 89.99 }
+        currency: { type: string, example: usd }
+        interval: { type: string, example: month }
+        ai_enabled: { type: boolean }
+
+    Subscription:
+      type: object
+      description: "`{\"status\":\"none\",\"access_granted\":false}` when the company has no subscription record yet."
+      properties:
+        id: { type: integer, nullable: true }
+        status:
+          type: string
+          enum: [none, trialing, active, past_due, unpaid, canceled, incomplete, incomplete_expired]
+        plan: { type: string, nullable: true, description: "Plan slug, or null during trial", example: basic }
+        trial_ends_at: { type: string, format: date-time, nullable: true }
+        current_period_end: { type: string, format: date-time, nullable: true }
+        cancel_at_period_end: { type: boolean }
+        access_granted: { type: boolean, description: "See Subscription#access_granted? — whether the platform should let this company in." }
