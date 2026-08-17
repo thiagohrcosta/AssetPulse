@@ -32,6 +32,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       # Only needed if config/master.key isn't present on disk (e.g. CI).
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
+      # Company logo uploads (Active Storage → Cloudinary, see config/storage.yml).
+      CLOUDINARY_URL: ${CLOUDINARY_URL:-}
+      # Comma-separated origins allowed to call the API from the browser (see config/initializers/cors.rb).
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001}
+      # Subscription billing (see config/initializers/stripe.rb and app/services/stripe_plan_sync.rb).
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_CHECKOUT_SUCCESS_URL: ${STRIPE_CHECKOUT_SUCCESS_URL:-http://localhost:3001/billing/success}
+      STRIPE_CHECKOUT_CANCEL_URL: ${STRIPE_CHECKOUT_CANCEL_URL:-http://localhost:3001/billing/cancel}
     ports:
       - "${API_PORT:-3000}:3000"
     volumes:
