@@ -1,11 +1,11 @@
 "use client";
 // Client Component: parts listing for the active company, backed by
-// @assetpulse/sdk's PartsResource instead of a hand-rolled fetch call —
+// @thiagohrcosta/assetpulse-sdk's PartsResource instead of a hand-rolled fetch call —
 // see lib/asset-pulse-client.ts.
 
 import { useEffect, useState, type FormEvent } from "react";
-import type { HostUnit, Part, PartCreateInput, PartListFilters } from "@assetpulse/sdk";
-import { AssetPulseApiError } from "@assetpulse/sdk";
+import type { HostUnit, Part, PartCreateInput, PartListFilters } from "@thiagohrcosta/assetpulse-sdk";
+import { AssetPulseApiError } from "@thiagohrcosta/assetpulse-sdk";
 
 import { useAuth } from "@/context/auth-context";
 import { createAssetPulseClient } from "@/lib/asset-pulse-client";

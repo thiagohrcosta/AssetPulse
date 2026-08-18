@@ -1,4 +1,4 @@
-import { AssetPulseClient } from "@assetpulse/sdk";
+import { AssetPulseClient } from "@thiagohrcosta/assetpulse-sdk";
 
 // Thin factory around the SDK: the app's own lib/api.ts (fetch + zod) keeps
 // covering auth/companies/plans/subscriptions, but resources the SDK
