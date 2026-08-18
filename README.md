@@ -32,6 +32,23 @@ docker compose down                 # para tudo (mantém os volumes)
 docker compose down -v              # para tudo e apaga os volumes (reset total)
 ```
 
+## Testes (backend)
+
+Suite em RSpec (+ FactoryBot/Faker para dados, Shoulda Matchers para
+validações/associações, SimpleCov cobrindo a coverage). Roda contra o mesmo
+serviço `db` do compose, banco `asset_pulse_api_test`, sem precisar de nada
+extra:
+
+```bash
+docker compose up -d db api
+docker compose exec -e RAILS_ENV=test api bin/rails db:prepare   # só na 1ª vez / após migration nova
+docker compose exec -e RAILS_ENV=test api bundle exec rspec
+```
+
+O SimpleCov falha o processo (exit 2) se a cobertura de linhas cair abaixo
+de 90% — configurado em [asset-pulse-api/spec/rails_helper.rb](asset-pulse-api/spec/rails_helper.rb).
+Relatório HTML fica em `asset-pulse-api/coverage/index.html`.
+
 ## Frontend (planejado)
 
 O serviço `web` já está deixado comentado em [docker-compose.yml](docker-compose.yml)
