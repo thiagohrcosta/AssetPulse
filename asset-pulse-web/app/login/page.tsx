@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { AuthSplitLayout } from "@/components/layout/auth-split-layout";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -36,8 +37,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <AuthSplitLayout>
+      <div className="rounded-2xl border border-zinc-200 bg-paper p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Log in</h1>
         <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
           Welcome back to AssetPulse.
@@ -72,11 +73,11 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-zinc-900 underline dark:text-zinc-50">
+          <Link href="/register" className="font-medium text-brand-red hover:underline">
             Create one
           </Link>
         </p>
       </div>
-    </main>
+    </AuthSplitLayout>
   );
 }

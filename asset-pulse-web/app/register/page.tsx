@@ -13,6 +13,8 @@ import { ApiError, type RegisterPayload } from "@/lib/api";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { AuthSplitLayout } from "@/components/layout/auth-split-layout";
+import { StepIndicator } from "@/components/layout/step-indicator";
 
 const initialForm: RegisterPayload = {
   email: "",
@@ -60,8 +62,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <AuthSplitLayout eyebrow={<StepIndicator current={1} />}>
+      <div className="rounded-2xl border border-zinc-200 bg-paper p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Create your account
         </h1>
@@ -184,17 +186,17 @@ export default function RegisterPage() {
           </section>
 
           <SubmitButton pending={pending} pendingLabel="Creating account…" className="mt-2">
-            Create account
+            Continue
           </SubmitButton>
         </form>
 
         <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-zinc-900 underline dark:text-zinc-50">
+          <Link href="/login" className="font-medium text-brand-red hover:underline">
             Log in
           </Link>
         </p>
       </div>
-    </main>
+    </AuthSplitLayout>
   );
 }

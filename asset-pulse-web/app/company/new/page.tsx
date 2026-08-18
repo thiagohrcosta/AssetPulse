@@ -11,6 +11,8 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ErrorBanner } from "@/components/ui/error-banner";
+import { AuthSplitLayout } from "@/components/layout/auth-split-layout";
+import { StepIndicator } from "@/components/layout/step-indicator";
 
 const initialForm: Omit<CompanyPayload, "logo"> = {
   name: "",
@@ -58,8 +60,8 @@ function NewCompanyForm() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-xl rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <AuthSplitLayout eyebrow={<StepIndicator current={2} />}>
+      <div className="rounded-2xl border border-zinc-200 bg-paper p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Set up your company
         </h1>
@@ -144,7 +146,7 @@ function NewCompanyForm() {
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={(e) => setLogo(e.target.files?.[0] ?? null)}
-              className="text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white dark:text-zinc-400 dark:file:bg-zinc-50 dark:file:text-zinc-900"
+              className="text-sm text-zinc-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-navy file:px-3 file:py-2 file:text-sm file:font-medium file:text-white dark:text-zinc-400 dark:file:bg-zinc-50 dark:file:text-brand-navy"
             />
           </label>
 
@@ -153,7 +155,7 @@ function NewCompanyForm() {
           </SubmitButton>
         </form>
       </div>
-    </main>
+    </AuthSplitLayout>
   );
 }
 

@@ -3,7 +3,7 @@
 // @thiagohrcosta/assetpulse-sdk's PartsResource instead of a hand-rolled fetch call —
 // see lib/asset-pulse-client.ts.
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { HostUnit, Part, PartCreateInput, PartListFilters } from "@thiagohrcosta/assetpulse-sdk";
 import { AssetPulseApiError } from "@thiagohrcosta/assetpulse-sdk";
 
@@ -12,9 +12,13 @@ import { createAssetPulseClient } from "@/lib/asset-pulse-client";
 import { ApiError, listCompanies, listPartTypeReferences } from "@/lib/api";
 import type { PartTypeReference } from "@/lib/types";
 import { ProtectedRoute } from "@/components/protected-route";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { ErrorBanner } from "@/components/ui/error-banner";
 import { Field } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Pagination } from "@/components/ui/pagination";
+import { PlusIcon } from "@/components/icons";
 
 const STATUS_OPTIONS: NonNullable<PartListFilters["status"]>[] = [
   "installed",
@@ -23,9 +27,15 @@ const STATUS_OPTIONS: NonNullable<PartListFilters["status"]>[] = [
   "scrapped",
 ];
 
+// Anything longer than this gets paginated instead of dumped on the page as
+// one long list.
+const PAGE_SIZE = 15;
+
 function PartsContent() {
   const { token, company, setCompany } = useAuth();
   const [statusFilter, setStatusFilter] = useState<PartListFilters["status"] | "">("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [parts, setParts] = useState<Part[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,6 +130,36 @@ function PartsContent() {
     };
   }, [token, company]);
 
+  // The status filter is server-side (see the effect above); search is a
+  // client-side pass over whatever page of that result came back.
+  const filteredParts = useMemo(() => {
+    if (!parts) return null;
+    const term = search.trim().toLowerCase();
+    if (!term) return parts;
+    return parts.filter(
+      (part) =>
+        part.serial_number.toLowerCase().includes(term) ||
+        part.manufacturer.toLowerCase().includes(term) ||
+        part.model.toLowerCase().includes(term)
+    );
+  }, [parts, search]);
+
+  const pageCount = filteredParts ? Math.max(1, Math.ceil(filteredParts.length / PAGE_SIZE)) : 1;
+
+  // Changing the status filter or search term can move the previously-viewed
+  // page out of range, so snap back to page 1 whenever either changes. This
+  // adjusts state during render (React's documented pattern for "reset state
+  // when a prop changes") rather than in an effect, which would cost an
+  // extra render pass.
+  const filterKey = `${statusFilter}:${search.trim().toLowerCase()}`;
+  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+  if (filterKey !== lastFilterKey) {
+    setLastFilterKey(filterKey);
+    setPage(1);
+  }
+
+  const pagedParts = filteredParts?.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) ?? null;
+
   async function handleCreatePart(input: PartCreateInput) {
     if (!token || !company) return;
 
@@ -134,55 +174,48 @@ function PartsContent() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-4xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Parts</h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {company ? company.name : "Loading company…"}
-            </p>
-          </div>
+    <DashboardShell
+      title="Parts"
+      description={company ? company.name : "Loading company…"}
+      search={{ value: search, onChange: setSearch, placeholder: "Search by serial, manufacturer, model…" }}
+      actions={
+        <>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as PartListFilters["status"] | "")}
+            className="rounded-lg border border-zinc-300 bg-paper px-3 py-2 text-sm text-zinc-900 outline-none focus:border-brand-navy focus:ring-1 focus:ring-brand-navy dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          >
+            <option value="">All statuses</option>
+            {STATUS_OPTIONS.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
 
-          <div className="flex items-center gap-2">
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as PartListFilters["status"] | "")}
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-            >
-              <option value="">All statuses</option>
-              {STATUS_OPTIONS.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+          <button
+            type="button"
+            onClick={() => setShowNewPartForm((value) => !value)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-2 text-sm font-medium text-white transition hover:bg-brand-navy-light dark:bg-zinc-50 dark:text-brand-navy dark:hover:bg-zinc-200"
+          >
+            <PlusIcon className="size-4" />
+            {showNewPartForm ? "Cancel" : "New part"}
+          </button>
+        </>
+      }
+    >
+      <ErrorBanner message={error} />
 
-            <button
-              type="button"
-              onClick={() => setShowNewPartForm((value) => !value)}
-              className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {showNewPartForm ? "Cancel" : "New part"}
-            </button>
-          </div>
-        </div>
+      {showNewPartForm && (
+        <NewPartForm
+          partTypeReferences={partTypeReferences}
+          hostUnits={hostUnits}
+          onCreate={handleCreatePart}
+        />
+      )}
 
-        <div className="mt-6">
-          <ErrorBanner message={error} />
-        </div>
-
-        {showNewPartForm && (
-          <div className="mt-4">
-            <NewPartForm
-              partTypeReferences={partTypeReferences}
-              hostUnits={hostUnits}
-              onCreate={handleCreatePart}
-            />
-          </div>
-        )}
-
-        <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-paper dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
               <tr>
@@ -202,7 +235,7 @@ function PartsContent() {
                 </tr>
               )}
 
-              {!loading && parts?.length === 0 && (
+              {!loading && pagedParts?.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-6 text-center text-zinc-400">
                     No parts found.
@@ -211,7 +244,7 @@ function PartsContent() {
               )}
 
               {!loading &&
-                parts?.map((part) => (
+                pagedParts?.map((part) => (
                   <tr key={part.id} className="text-zinc-700 dark:text-zinc-300">
                     <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50">
                       {part.serial_number}
@@ -220,17 +253,25 @@ function PartsContent() {
                     <td className="px-4 py-3">{part.model}</td>
                     <td className="px-4 py-3">{part.host_unit_id ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                        {part.status}
-                      </span>
+                      <StatusBadge status={part.status} />
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
+
+        {!loading && filteredParts && (
+          <Pagination
+            page={page}
+            pageCount={pageCount}
+            onPageChange={setPage}
+            totalItems={filteredParts.length}
+            pageSize={PAGE_SIZE}
+          />
+        )}
       </div>
-    </main>
+    </DashboardShell>
   );
 }
 
@@ -285,7 +326,7 @@ function NewPartForm({ partTypeReferences, hostUnits, onCreate }: NewPartFormPro
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950"
+      className="rounded-2xl border border-zinc-200 bg-paper p-6 dark:border-zinc-800 dark:bg-zinc-950"
     >
       <div className="mb-4">
         <ErrorBanner message={error} />
@@ -301,7 +342,7 @@ function NewPartForm({ partTypeReferences, hostUnits, onCreate }: NewPartFormPro
             required
             value={partTypeReferenceId}
             onChange={(event) => setPartTypeReferenceId(event.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-paper px-3 py-2 text-zinc-900 outline-none focus:border-brand-navy focus:ring-1 focus:ring-brand-navy dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
           >
             <option value="" disabled>
               {partTypeReferences ? "Select a part type" : "Loading…"}
@@ -320,7 +361,7 @@ function NewPartForm({ partTypeReferences, hostUnits, onCreate }: NewPartFormPro
             id="host_unit_id"
             value={hostUnitId}
             onChange={(event) => setHostUnitId(event.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+            className="rounded-lg border border-zinc-300 bg-paper px-3 py-2 text-zinc-900 outline-none focus:border-brand-navy focus:ring-1 focus:ring-brand-navy dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
           >
             <option value="">Unassigned</option>
             {hostUnits?.map((hostUnit) => (
