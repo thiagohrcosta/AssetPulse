@@ -24,6 +24,24 @@ tags:
       `checkout_session` hands back a Stripe Checkout URL for the Basic/Premium
       plans; `billing_portal` lets an already-paying company manage/cancel.
       Access is gated on Subscription#access_granted? (see app/models/subscription.rb).
+  - name: Host Units
+    description: >
+      Vehicles/equipment owned by a fleet-operator company. Gated on the
+      company having an active trial or subscription (see SubscriptionGate).
+  - name: Parts
+    description: >
+      Serialized parts tracked through their lifecycle, scoped to a company.
+      Gated on the company having an active trial or subscription.
+  - name: Lifecycle Events
+    description: >
+      History entries (installed/maintenance/replaced/reassigned/scrapped) for
+      a part, scoped to a company + part. Gated on the company having an
+      active trial or subscription.
+  - name: Part Type References
+    description: >
+      Catalog of trackable part categories (brake pad, battery, ...) and their
+      typical lifespan. Read by any authenticated user; write actions
+      (create/update/delete) require an admin user.
   - name: Stripe Webhooks
     description: Called by Stripe itself, not by API clients — included for completeness.
   - name: Health
@@ -332,6 +350,401 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/v1/companies/{company_id}/host_units:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Host Units]
+      summary: List the company's host units
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/HostUnit' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Host Units]
+      summary: Create a host unit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HostUnitInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HostUnit' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/host_units/{id}:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Host Units]
+      summary: Show a host unit
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HostUnit' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Host Units]
+      summary: Update a host unit
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HostUnitInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HostUnit' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Host Units]
+      summary: Delete a host unit
+      description: Parts installed on this host unit are not deleted — their host_unit_id is set to null.
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/parts:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Parts]
+      summary: List the company's parts
+      parameters:
+        - name: host_unit_id
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: string, enum: [installed, in_repair, removed, scrapped] }
+        - name: part_type_reference_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Part' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Parts]
+      summary: Create a part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Part' }
+        '422':
+          description: Validation failed, or host_unit_id belongs to another company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/parts/{id}:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Parts]
+      summary: Show a part
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Part' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Parts]
+      summary: Update a part
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Part' }
+        '422':
+          description: Validation failed, or host_unit_id belongs to another company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Parts]
+      summary: Delete a part
+      description: "Also deletes the part's lifecycle_events (dependent: :destroy)."
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/parts/{part_id}/lifecycle_events:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: part_id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Lifecycle Events]
+      summary: List a part's lifecycle events, chronologically
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LifecycleEvent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Lifecycle Events]
+      summary: Record a lifecycle event for a part
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifecycleEventInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifecycleEvent' }
+        '422':
+          description: Validation failed, or host_unit_id belongs to another company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/companies/{company_id}/parts/{part_id}/lifecycle_events/{id}:
+    parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: part_id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Lifecycle Events]
+      summary: Show a lifecycle event
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifecycleEvent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Lifecycle Events]
+      summary: Update a lifecycle event
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LifecycleEventInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LifecycleEvent' }
+        '422':
+          description: Validation failed, or host_unit_id belongs to another company
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Lifecycle Events]
+      summary: Delete a lifecycle event
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '402': { $ref: '#/components/responses/PaymentRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/part_type_references:
+    get:
+      tags: [Part Type References]
+      summary: List the part type catalog
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PartTypeReference' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Part Type References]
+      summary: Add a part type to the catalog
+      description: Admin only (User#access == "admin").
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartTypeReferenceInput' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartTypeReference' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/part_type_references/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Part Type References]
+      summary: Show a part type
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartTypeReference' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Part Type References]
+      summary: Update a part type
+      description: Admin only (User#access == "admin").
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PartTypeReferenceInput' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PartTypeReference' }
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Errors' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Part Type References]
+      summary: Delete a part type
+      description: Admin only. Fails if any part still references this type (restrict_with_error).
+      responses:
+        '204': { description: Deleted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Parts still reference this type
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
   /api/v1/stripe/webhooks:
     post:
       tags: [Stripe Webhooks]
@@ -377,6 +790,20 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
     NotFound:
       description: Not found (or not owned by the current user)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    PaymentRequired:
+      description: Trial expired and no active subscription (SubscriptionGate)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+              subscription_status: { type: string, example: none }
+    Forbidden:
+      description: Authenticated, but not an admin user
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -466,3 +893,101 @@ components:
         current_period_end: { type: string, format: date-time, nullable: true }
         cancel_at_period_end: { type: boolean }
         access_granted: { type: boolean, description: "See Subscription#access_granted? — whether the platform should let this company in." }
+
+    HostUnitInput:
+      type: object
+      required: [vin, description]
+      properties:
+        vin: { type: string, minLength: 17, maxLength: 17, example: "1HGCM82633A004352" }
+        description: { type: string, example: "Toyota Corolla 2019" }
+
+    HostUnit:
+      type: object
+      properties:
+        id: { type: integer }
+        company_id: { type: integer }
+        vin: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PartInput:
+      type: object
+      required: [part_type_reference_id, serial_number, manufacturer, model]
+      properties:
+        part_type_reference_id: { type: integer }
+        host_unit_id: { type: integer, nullable: true, description: "Must belong to the same company. Null if not currently installed." }
+        serial_number: { type: string, example: "BP-BSH-000123" }
+        manufacturer: { type: string, example: Bosch }
+        model: { type: string, example: "BO-042" }
+        status: { type: string, enum: [installed, in_repair, removed, scrapped], default: installed }
+
+    Part:
+      type: object
+      properties:
+        id: { type: integer }
+        company_id: { type: integer }
+        host_unit_id: { type: integer, nullable: true }
+        part_type_reference_id: { type: integer }
+        serial_number: { type: string }
+        manufacturer: { type: string }
+        model: { type: string }
+        status: { type: string, enum: [installed, in_repair, removed, scrapped] }
+        part_type: { type: string, description: "Delegated from part_type_reference", example: brake_pad }
+        typical_lifespan_days: { type: integer, description: "Delegated from part_type_reference" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    LifecycleEventInput:
+      type: object
+      required: [event_type, occurred_at, age_at_event_days]
+      properties:
+        event_type:
+          type: string
+          enum: [installed, maintenance, replaced_wear, replaced_defect, reassigned, scrapped]
+        installation_type:
+          type: string
+          nullable: true
+          enum: [factory_original, aftermarket_new, aftermarket_refurbished]
+        occurred_at: { type: string, format: date-time }
+        age_at_event_days: { type: integer, minimum: 0, description: "Continuous days in service since the part's current life cycle started." }
+        notes: { type: string, nullable: true }
+        host_unit_id: { type: integer, nullable: true, description: "Must belong to the same company. Null once the part is no longer installed anywhere." }
+
+    LifecycleEvent:
+      type: object
+      properties:
+        id: { type: integer }
+        part_id: { type: integer }
+        host_unit_id: { type: integer, nullable: true }
+        company_id: { type: integer }
+        event_type:
+          type: string
+          enum: [installed, maintenance, replaced_wear, replaced_defect, reassigned, scrapped]
+        installation_type:
+          type: string
+          nullable: true
+          enum: [factory_original, aftermarket_new, aftermarket_refurbished]
+        occurred_at: { type: string, format: date-time }
+        age_at_event_days: { type: integer }
+        notes: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    PartTypeReferenceInput:
+      type: object
+      required: [part_type, typical_lifespan_days]
+      properties:
+        part_type:
+          type: string
+          enum: [brake_pad, brake_rotor, battery, alternator, spark_plug, air_filter, oil_filter, tire, water_pump, shock_absorber]
+        typical_lifespan_days: { type: integer, minimum: 1, example: 545 }
+
+    PartTypeReference:
+      type: object
+      properties:
+        id: { type: integer }
+        part_type: { type: string }
+        typical_lifespan_days: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

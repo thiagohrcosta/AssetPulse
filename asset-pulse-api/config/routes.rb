@@ -24,7 +24,14 @@ Rails.application.routes.draw do
           post :checkout_session
           post :billing_portal
         end
+
+        resources :host_units
+        resources :parts do
+          resources :lifecycle_events
+        end
       end
+
+      resources :part_type_references
 
       get "plans", to: "plans#index"
 
