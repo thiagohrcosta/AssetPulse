@@ -1,8 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #faf6f5;
   --foreground: #171717;
+
+  /* Brand — sampled from public/logo.png (navy map + red pin). */
+  --color-brand-navy: #0b2452;
+  --color-brand-navy-dark: #061530;
+  --color-brand-navy-light: #16407a;
+  --color-brand-red: #e01a2b;
+  --color-brand-red-dark: #b30e22;
+
+  /* Surfaces — a flat #fff reads harsh next to real content, so every
+     "white" card/page background in the app is one of these two instead:
+     a hair off-white, warmed very slightly toward the brand red rather
+     than pure neutral. */
+  --color-paper: #fdfbfa;
+  --color-paper-muted: #f7f2f1;
+
+  /* Status palette — fixed roles, not part of the categorical theme. Used
+     for part lifecycle states (installed/in_repair/removed/scrapped) so a
+     status color never doubles as a chart series color. */
+  --color-status-good: #0ca30c;
+  --color-status-warning: #fab219;
+  --color-status-serious: #ec835a;
+  --color-status-critical: #d03b3b;
+
+  /* Categorical chart theme — fixed hue order, never cycled. */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #eb6834;
+  --color-chart-3: #1baf7a;
+  --color-chart-other: #a1a1aa;
 }
 
 @theme inline {
@@ -10,12 +38,33 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-brand-navy: var(--color-brand-navy);
+  --color-brand-navy-dark: var(--color-brand-navy-dark);
+  --color-brand-navy-light: var(--color-brand-navy-light);
+  --color-brand-red: var(--color-brand-red);
+  --color-brand-red-dark: var(--color-brand-red-dark);
+
+  --color-paper: var(--color-paper);
+  --color-paper-muted: var(--color-paper-muted);
+
+  --color-status-good: var(--color-status-good);
+  --color-status-warning: var(--color-status-warning);
+  --color-status-serious: var(--color-status-serious);
+  --color-status-critical: var(--color-status-critical);
+
+  --color-chart-1: var(--color-chart-1);
+  --color-chart-2: var(--color-chart-2);
+  --color-chart-3: var(--color-chart-3);
+  --color-chart-other: var(--color-chart-other);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --color-paper: #0c0c0c;
+    --color-paper-muted: #000000;
   }
 }
 

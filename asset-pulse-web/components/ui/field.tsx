@@ -13,7 +13,7 @@ export function Field({ label, id, className, ...inputProps }: FieldProps) {
       </span>
       <input
         id={id}
-        className={`rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-100 dark:focus:ring-zinc-100 ${className ?? ""}`}
+        className={`rounded-lg border border-zinc-300 bg-paper px-3 py-2 text-zinc-900 outline-none transition focus:border-brand-navy focus:ring-1 focus:ring-brand-navy dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-100 dark:focus:ring-zinc-100 ${className ?? ""}`}
         {...inputProps}
       />
     </label>

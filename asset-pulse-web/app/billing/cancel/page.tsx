@@ -4,8 +4,8 @@ import Link from "next/link";
 
 export default function BillingCancelPage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-black">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <main className="flex flex-1 items-center justify-center bg-paper-muted px-4 py-12 dark:bg-black">
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-paper p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Checkout canceled
         </h1>
