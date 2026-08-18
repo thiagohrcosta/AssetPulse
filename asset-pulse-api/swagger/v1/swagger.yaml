@@ -407,7 +407,7 @@ components:
         address_city: { type: string }
         address_complement: { type: string, nullable: true }
         address_state: { type: string }
-        access: { type: string, enum: [user, admin] }
+        access: { type: string, enum: [user, admin, company_admin] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
