@@ -80,7 +80,17 @@ class Api::V1::SubscriptionsController < ApplicationController
   end
 
   def subscription_json(subscription)
-    return { status: "none", access_granted: false } if subscription.nil?
+    if subscription.nil?
+      return {
+        id: nil,
+        status: "none",
+        plan: nil,
+        trial_ends_at: nil,
+        current_period_end: nil,
+        cancel_at_period_end: nil,
+        access_granted: false
+      }
+    end
 
     subscription.as_json(
       only: %i[id status trial_ends_at current_period_end cancel_at_period_end],
