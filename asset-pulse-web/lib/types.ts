@@ -2,6 +2,7 @@ import type { z } from "zod";
 
 import type {
   companySchema,
+  partTypeReferenceSchema,
   planSchema,
   subscriptionSchema,
   subscriptionStatusSchema,
@@ -17,3 +18,4 @@ export type Company = z.infer<typeof companySchema>;
 export type Plan = z.infer<typeof planSchema>;
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export type Subscription = z.infer<typeof subscriptionSchema>;
+export type PartTypeReference = z.infer<typeof partTypeReferenceSchema>;

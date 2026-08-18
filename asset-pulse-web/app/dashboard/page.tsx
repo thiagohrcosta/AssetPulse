@@ -3,6 +3,7 @@
 // (localStorage-backed) and offers a logout action — both client-only.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import { useAuth } from "@/context/auth-context";
 import { ApiError, getSubscription, listCompanies } from "@/lib/api";
@@ -66,12 +67,20 @@ function DashboardContent() {
             </h1>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{user?.email}</p>
           </div>
-          <button
-            onClick={logout}
-            className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/parts"
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              Parts
+            </Link>
+            <button
+              onClick={logout}
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            >
+              Log out
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">

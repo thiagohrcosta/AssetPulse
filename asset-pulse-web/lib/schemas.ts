@@ -76,3 +76,14 @@ export const subscriptionSchema = z.object({
 export const checkoutSessionSchema = z.object({
   checkout_url: z.string(),
 });
+
+// Global reference/lookup data (see Api::V1::PartTypeReferencesController) —
+// not company-scoped, so it comes from lib/api.ts rather than
+// AssetPulseClient, which is always instantiated per-company.
+export const partTypeReferenceSchema = z.object({
+  id: z.number(),
+  part_type: z.string(),
+  typical_lifespan_days: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
