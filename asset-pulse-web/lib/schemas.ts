@@ -16,7 +16,7 @@ export const userSchema = z.object({
   address_city: z.string(),
   address_complement: z.string().nullable(),
   address_state: z.string(),
-  access: z.enum(["user", "admin"]),
+  access: z.enum(["user", "admin", "company_admin"]),
   created_at: z.string(),
   updated_at: z.string(),
 });

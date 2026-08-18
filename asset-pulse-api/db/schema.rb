@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_17_194600) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_17_200400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -54,8 +54,63 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_17_194600) do
     t.bigint "user_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "company_type", default: "fleet_operator", null: false
+    t.index ["company_type"], name: "index_companies_on_company_type"
     t.index ["registration_number"], name: "index_companies_on_registration_number", unique: true
     t.index ["user_id"], name: "index_companies_on_user_id"
+  end
+
+  create_table "host_units", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "vin", null: false
+    t.string "description", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_host_units_on_company_id"
+    t.index ["vin"], name: "index_host_units_on_vin", unique: true
+  end
+
+  create_table "lifecycle_events", force: :cascade do |t|
+    t.bigint "part_id", null: false
+    t.bigint "host_unit_id"
+    t.bigint "company_id", null: false
+    t.string "event_type", null: false
+    t.string "installation_type"
+    t.datetime "occurred_at", null: false
+    t.integer "age_at_event_days", null: false
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_lifecycle_events_on_company_id"
+    t.index ["event_type"], name: "index_lifecycle_events_on_event_type"
+    t.index ["host_unit_id"], name: "index_lifecycle_events_on_host_unit_id"
+    t.index ["part_id", "occurred_at"], name: "index_lifecycle_events_on_part_id_and_occurred_at"
+    t.index ["part_id"], name: "index_lifecycle_events_on_part_id"
+  end
+
+  create_table "part_type_references", force: :cascade do |t|
+    t.string "part_type", null: false
+    t.integer "typical_lifespan_days", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["part_type"], name: "index_part_type_references_on_part_type", unique: true
+  end
+
+  create_table "parts", force: :cascade do |t|
+    t.bigint "part_type_reference_id", null: false
+    t.bigint "host_unit_id"
+    t.bigint "company_id", null: false
+    t.string "serial_number", null: false
+    t.string "manufacturer", null: false
+    t.string "model", null: false
+    t.string "status", default: "installed", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id"], name: "index_parts_on_company_id"
+    t.index ["host_unit_id"], name: "index_parts_on_host_unit_id"
+    t.index ["part_type_reference_id", "manufacturer", "model"], name: "index_parts_on_type_manufacturer_model"
+    t.index ["part_type_reference_id"], name: "index_parts_on_part_type_reference_id"
+    t.index ["serial_number"], name: "index_parts_on_serial_number", unique: true
   end
 
   create_table "plans", force: :cascade do |t|
@@ -116,6 +171,13 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_17_194600) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "companies", "users"
+  add_foreign_key "host_units", "companies"
+  add_foreign_key "lifecycle_events", "companies"
+  add_foreign_key "lifecycle_events", "host_units"
+  add_foreign_key "lifecycle_events", "parts"
+  add_foreign_key "parts", "companies"
+  add_foreign_key "parts", "host_units"
+  add_foreign_key "parts", "part_type_references"
   add_foreign_key "subscriptions", "companies"
   add_foreign_key "subscriptions", "plans"
 end

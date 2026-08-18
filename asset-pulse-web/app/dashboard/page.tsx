@@ -5,14 +5,37 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/auth-context";
-import { ApiError, getSubscription } from "@/lib/api";
+import { ApiError, getSubscription, listCompanies } from "@/lib/api";
 import type { Subscription } from "@/lib/types";
 import { ProtectedRoute } from "@/components/protected-route";
 
 function DashboardContent() {
-  const { user, company, token, logout } = useAuth();
+  const { user, company, token, logout, setCompany } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+  // The auth context only holds a `company` once some screen has resolved
+  // and cached it via setCompany (see company/new and subscription pages) —
+  // login/register never populate it. Hydrate it here too so a user who
+  // already has a company but lands straight on the dashboard still sees it.
+  useEffect(() => {
+    if (!token || company) return;
+
+    let cancelled = false;
+    listCompanies(token)
+      .then((companies) => {
+        const activeCompany = companies.at(-1) ?? null;
+        if (!cancelled && activeCompany) setCompany(activeCompany);
+      })
+      .catch(() => {
+        // No company to resolve (or request failed) — leave the
+        // "No company on file" state as-is.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, company, setCompany]);
 
   useEffect(() => {
     if (!token || !company) return;

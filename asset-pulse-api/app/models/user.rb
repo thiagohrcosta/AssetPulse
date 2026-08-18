@@ -14,8 +14,12 @@ class User < ApplicationRecord
   validates :address_city, presence: true
   validates :address_state, presence: true
 
+  # user: regular member of a company. company_admin: owns/administers one
+  # or more companies (a company's `user_id` points at one of these).
+  # admin: AssetPulse staff, not tied to any company.
   enum access: {
     user: 0,
-    admin: 1
+    admin: 1,
+    company_admin: 2
   }
 end

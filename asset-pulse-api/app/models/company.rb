@@ -1,7 +1,11 @@
 class Company < ApplicationRecord
   belongs_to :user
   has_one :subscription, dependent: :destroy
+  has_many :host_units, dependent: :destroy
+  has_many :parts, dependent: :destroy
   has_one_attached :logo
+
+  enum :company_type, { fleet_operator: "fleet_operator", repair_shop: "repair_shop" }, default: "fleet_operator"
 
   validates :name, presence: true
   validates :registration_number, presence: true, uniqueness: true
