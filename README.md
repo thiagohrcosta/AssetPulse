@@ -1,4 +1,5 @@
 # AssetPulse
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/2c79d8cf-fc3e-4afb-83cf-7ac288edbf83" />
 
 **Fleet & parts lifecycle management, built end-to-end: Rails API, Next.js
 dashboard, and a published TypeScript SDK that ties them together.**
