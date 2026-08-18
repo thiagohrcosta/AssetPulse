@@ -57,6 +57,15 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # RSpec integration for Rails (replaces the default minitest runner)
+  gem "rspec-rails"
+
+  # Test data factories, fed with Faker-generated attributes
+  gem "factory_bot_rails"
+
+  # Generates realistic fake data for specs
+  gem "faker"
 end
 
 group :development do
@@ -71,4 +80,10 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # Code coverage reporting — enforce the 90% minimum in spec/spec_helper.rb
+  gem "simplecov", require: false
+
+  # One-liner matchers for common ActiveRecord/ActiveModel validations & associations
+  gem "shoulda-matchers"
 end
