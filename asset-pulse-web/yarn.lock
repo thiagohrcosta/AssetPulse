@@ -698,10 +698,10 @@
     postcss "^8.5.16"
     tailwindcss "4.3.3"
 
-"@thiagohrcosta/assetpulse-sdk@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.npmjs.org/@thiagohrcosta/assetpulse-sdk/-/assetpulse-sdk-0.1.0.tgz#003f2c43fafbe0dd49a1f7b26494412187ca0c34"
-  integrity sha512-kY9/8W8sTq+fihmmU38v29X6bIj633/d27E8HI/3kNi+wmRTB4OzgKtNFU5yjgi/6FFl4iKu5w2tk0NuN8Xi9w==
+"@thiagohrcosta/assetpulse-sdk@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@thiagohrcosta/assetpulse-sdk/-/assetpulse-sdk-0.1.1.tgz#392733c117ae840c8f2f1f25f68b5d9102cc9f7e"
+  integrity sha512-8YolTJtZmavZ0g8dn21CKbfpBPEKdnTCjjsyu5zRaMlRHqYtkiAlp7/gUyeTOmH+SmvuWNYCCntDxonauJFWYA==
   dependencies:
     zod "^3.23.8"
 
