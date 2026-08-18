@@ -4,10 +4,11 @@ import {
   authResponseSchema,
   checkoutSessionSchema,
   companySchema,
+  partTypeReferenceSchema,
   planSchema,
   subscriptionSchema,
 } from "./schemas";
-import type { Company, Plan, Subscription } from "./types";
+import type { Company, Plan, PartTypeReference, Subscription } from "./types";
 
 // NEXT_PUBLIC_API_URL already includes the /api prefix (see .env), routes
 // below only need the /v1/... suffix from config/routes.rb.
@@ -166,6 +167,15 @@ export function startTrial(token: string, companyId: number): Promise<Subscripti
     method: "POST",
     token,
   });
+}
+
+// ---- Part type references ----------------------------------------------
+
+// GET /api/v1/part_type_references — global catalog, not scoped to a
+// company, so it's not part of AssetPulseClient (which is always built
+// per-company). Parts need a part_type_reference_id to be created.
+export function listPartTypeReferences(token: string): Promise<PartTypeReference[]> {
+  return request("/v1/part_type_references", z.array(partTypeReferenceSchema), { token });
 }
 
 export function createCheckoutSession(
